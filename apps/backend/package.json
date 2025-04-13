@@ -12,7 +12,11 @@
   "dependencies": {
     "@aws-sdk/client-sqs": "^3.787.0",
     "aws-lambda": "^1.0.7",
+    "dockerode": "^4.0.5",
     "dotenv": "^16.5.0",
     "nodemon": "^3.1.9"
+  },
+  "devDependencies": {
+    "@types/dockerode": "^3.3.37"
   }
 }

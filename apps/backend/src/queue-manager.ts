@@ -1,8 +1,14 @@
-import { ReceiveMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
+import {
+  DeleteMessageCommand,
+  ReceiveMessageCommand,
+  SQSClient,
+} from "@aws-sdk/client-sqs";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export class QueueManager {
   client: SQSClient;
-  private recieveCommand;
 
   constructor() {
     const AWS_USER_ACCESS_KEY = process.env.AWS_USER_ACCESS_KEY;
@@ -12,20 +18,32 @@ export class QueueManager {
 
     this.client = new SQSClient({
       region: SQS_REGION,
+
       credentials: {
         accessKeyId: AWS_USER_ACCESS_KEY!,
         secretAccessKey: AWS_USER_SECRET_KEY!,
       },
     });
-
-    this.recieveCommand = new ReceiveMessageCommand({
-      QueueUrl:  SQS_QUEUE_URL,
-      WaitTimeSeconds: 20,
-    });
   }
 
   async receiveMessage() {
-    return await this.client.send(this.recieveCommand);
+    const command = new ReceiveMessageCommand({
+      QueueUrl: process.env.SQS_QUEUE_URL,
+      WaitTimeSeconds: 20,
+      MaxNumberOfMessages: 5,
+      VisibilityTimeout: 20, // secs to hide msg during processing
+    });
+    return await this.client.send(command);
+  }
+
+  async deleteMessage(receiptHandle: string) {
+    const command = new DeleteMessageCommand({
+      QueueUrl: process.env.SQS_QUEUE_URL,
+      ReceiptHandle: receiptHandle,
+    });
+
+    const deleteExecCommandRes = await this.client.send(command);
+    console.log(`delete ${deleteExecCommandRes.$metadata.requestId} in`, deleteExecCommandRes.$metadata.attempts);
   }
 }
 

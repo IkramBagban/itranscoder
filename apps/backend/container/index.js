@@ -1,4 +1,4 @@
-console.log("importing packages...");
+console.log("new docker image loaded");
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -14,8 +14,6 @@ import fsOld from "node:fs";
 import path from "path";
 import ffmpeg from "fluent-ffmpeg";
 
-
-const key = "videos/transcodetesting.mkv";
 const bucketName = "itranscode";
 
 console.log("initializing s3 client");
@@ -36,33 +34,28 @@ const RESOLUTIONS = [
 ];
 
 const main = async () => {
-  console.log("running main fn", { bucketName, key });
   try {
     const command = new GetObjectCommand({
-      Bucket: bucketName,
+      Bucket: process.env.BUCKET_NAME || bucketName,
       // key: process.env.key,
-      Key: key,
+      Key: process.env.KEY || "videos/airdopsv2.mkv",
     });
 
     let result;
-
     try {
       result = await s3Client.send(command);
     } catch (error) {
       console.log("error send", error);
     }
-    console.log("res");
+    console.log("res", result);
     const originalFilePath = `original-video.mp4`;
-    console.log("originalFilePath", originalFilePath);
     await fs.writeFile(originalFilePath, result.Body);
-    console.log("write file");
     const originalVideoPath = path.resolve(originalFilePath);
-    console.log("original vidseo path", originalVideoPath);
-
 
     const promises = RESOLUTIONS.map((resolution) => {
-      const output = `${a?.split("/")?.[4] || "video"}-${resolution.name}.mp4`;
-      console.log("pathres", path.resolve(output));
+      const output = `${command.input.Key?.split("/")?.[1] || "video"}-${resolution.name}.mp4`;
+      // const output = `output-video-${resolution.name}.mp4`;
+      console.log(path.resolve(output));
 
       return new Promise((resolve) => {
         ffmpeg(originalVideoPath)
@@ -85,8 +78,6 @@ const main = async () => {
               Key: output,
               Body: fsOld.createReadStream(path.resolve(output)),
             });
-
-            console.log("putObjCommand", putObjCommand);
 
             await s3Client.send(putObjCommand);
             console.log("File upload seusccccessfuly");

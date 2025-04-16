@@ -1,8 +1,9 @@
 import dotenv from "dotenv";
 import { queueManager } from "./queue-manager";
 import { ecsManager } from "./ecs-manager";
-
-
+import express from "express";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 const safeJSONParse = (json: string) => {
   try {
     return JSON.parse(json);
@@ -61,3 +62,31 @@ const main = async () => {
 };
 
 main();
+
+const app = express();
+console.log("process.env.AWS_USER_ACCESS_KEY", process.env.AWS_USER_ACCESS_KEY);
+
+const s3Client = new S3Client({
+  region: "eu-north-1",
+  credentials: {
+    accessKeyId: process.env.AWS_USER_ACCESS_KEY!,
+    secretAccessKey: process.env.AWS_USER_SECRET_KEY!,
+  },
+});
+app.use(express.json());
+
+app.post("/upload/get-presigned-url", async (req, res) => {
+  console.log(req.body);
+  const { fileName, contentType } = req.body;
+  const puttCommand = new PutObjectCommand({
+    Bucket: process.env.BUCKET_NAME || 'itranscode',
+    Key: `videos/${fileName}`,
+    ContentType: contentType,
+  });
+
+  const presignedUrl = await getSignedUrl(s3Client, puttCommand);
+
+  res.json({ message: "Get presigned url successfully.", data: presignedUrl });
+});
+
+app.listen(9302, () => console.log("listening on port 9302"));

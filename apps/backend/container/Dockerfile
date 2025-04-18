@@ -7,6 +7,8 @@ RUN apk add ffmpeg
 WORKDIR /usr/src/app
 
 COPY ./package.json ./package.json
+COPY ./constants.js ./constants.js
+
 
 RUN npm install
 

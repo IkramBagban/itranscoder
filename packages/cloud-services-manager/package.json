@@ -1,0 +1,35 @@
+{
+  "name": "@repo/cloud-services-manager",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/types/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",  
+      "types": "./dist/types/index.d.ts"
+    },
+    "./ecs-manager": {
+      "import": "./dist/ecs-manager.js",
+      "types": "./dist/types/ecs-manager.d.ts"
+    },
+    "./queue-manager": {
+      "import": "./dist/queue-manager.js",
+      "types": "./dist/types/queue-manager.d.ts"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-ecs": "^3.787.0",
+    "@aws-sdk/client-sqs": "^3.787.0",
+    "@types/redis": "^4.0.11",
+    "dotenv": "^16.5.0",
+    "redis": "^4.7.0"
+  }
+}

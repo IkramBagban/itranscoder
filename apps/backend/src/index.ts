@@ -1,6 +1,5 @@
 import dotenv from "dotenv";
-import { queueManager } from "./queue-manager";
-import { ecsManager } from "./ecs-manager";
+import { queueManager, ecsManager } from "@repo/cloud-services-manager";
 const safeJSONParse = (json: string) => {
   try {
     return JSON.parse(json);

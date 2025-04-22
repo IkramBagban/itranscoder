@@ -1,8 +1,6 @@
 console.log("new docker image loaded");
 import dotenv from "dotenv";
 
-dotenv.config();
-
 import {
   S3Client,
   GetObjectCommand,
@@ -13,9 +11,18 @@ import fs from "fs/promises";
 import fsOld from "node:fs";
 import path from "path";
 import ffmpeg from "fluent-ffmpeg";
-import { RESOLUTIONS } from "./constants";
 
+import { RESOLUTIONS } from "./constants.js";
+
+dotenv.config();
 const bucketName = "itranscode";
+console.log("env vars", {
+  AWS_USER_ACCESS_KEY: process.env.AWS_USER_ACCESS_KEY,
+  AWS_USER_SECRET_KEY: process.env.AWS_USER_SECRET_KEY,
+  JOB_ID: process.env.JOB_ID,
+  BUCKET_NAME: process.env.BUCKET_NAME,
+  KEY: process.env.KEY,
+});
 
 console.log("initializing s3 client");
 const s3Client = new S3Client({
@@ -26,19 +33,18 @@ const s3Client = new S3Client({
   },
 });
 
-console.log("initialized s3client");
-
-
+console.log("initialized s3client", { jobId: process.env.JOB_ID });
 
 const main = async () => {
   try {
+    const jobId = process.env.JOB_ID
     const command = new GetObjectCommand({
       Bucket: process.env.BUCKET_NAME || bucketName,
-      // key: process.env.key,
-      Key: process.env.KEY || "videos/airdopsv2.mkv",
+      Key: process.env.KEY,
     });
 
     let result;
+    // redisManager.set('job:')
     try {
       result = await s3Client.send(command);
     } catch (error) {
@@ -80,6 +86,9 @@ const main = async () => {
             console.log("File upload seusccccessfuly");
 
             resolve();
+          })
+          .on("error", (error) => {
+            console.log("on error", error);
           })
           .format("mp4")
           .run();

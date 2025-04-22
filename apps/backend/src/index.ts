@@ -1,5 +1,8 @@
 import dotenv from "dotenv";
-import { queueManager, ecsManager } from "@repo/cloud-services-manager";
+dotenv.config();
+import { queueManager } from "@repo/cloud-services-manager";
+import { runTranscoderContainer } from "./dockerContainerRunner";
+import { ecsManager } from "./services";
 const safeJSONParse = (json: string) => {
   try {
     return JSON.parse(json);
@@ -10,8 +13,6 @@ const safeJSONParse = (json: string) => {
 };
 
 const sleep = async (ms: number) => await new Promise((r) => setTimeout(r, ms));
-
-dotenv.config();
 
 const main = async () => {
   console.log("running main");
@@ -48,13 +49,29 @@ const main = async () => {
           object: { key },
           bucket,
         } = s3;
-        console.log("key", key);
-        const res = await ecsManager.runTask(bucket.name, key);
+        const jobId = key.split("videos/")[1];
+        console.log("key & jobId", {key, jobId});
+        // const res = await runTranscoderContainer(key, jobId);
+        // const res = await ecsManager.runTask(bucket.name, key, jobId);
+        const res = await ecsManager.runTask({
+          BUCKET_NAME: bucket.name,
+          KEY: key,
+          JOB_ID: jobId,
+          AWS_USER_ACCESS_KEY: process.env.AWS_USER_ACCESS_KEY!,
+          AWS_USER_SECRET_KEY: process.env.AWS_USER_SECRET_KEY!,
+          SQS_QUEUE_URL: process.env.SQS_QUEUE_URL!,
+          SQS_REGION: process.env.SQS_REGION!,
+          REDIS_HOST: process.env.REDIS_HOST,
+          REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+          REDIS_PORT: process.env.REDIS_PORT,
+        });
         console.log("res", res);
         await queueManager.deleteMessage(message.ReceiptHandle!);
       }
     }
   }
 };
+
+
 
 main();

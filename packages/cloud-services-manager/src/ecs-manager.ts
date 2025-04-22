@@ -1,7 +1,4 @@
 import { ECSClient, RunTaskCommand } from "@aws-sdk/client-ecs";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 type ECSConfig = {
   region: string;
@@ -11,14 +8,25 @@ type ECSConfig = {
   cluster: string;
 };
 
+type TaskEnvVars = {
+  BUCKET_NAME: string;
+  KEY: string;
+  AWS_USER_ACCESS_KEY: string;
+  AWS_USER_SECRET_KEY: string;
+  SQS_QUEUE_URL: string;
+  SQS_REGION: string;
+  REDIS_HOST?: string;
+  REDIS_PASSWORD?: string;
+  REDIS_PORT?: string;
+  JOB_ID: string;
+};
+
 export class ECSManager {
   private readonly client: ECSClient;
   private readonly taskDefinition: string;
   private readonly cluster: string;
 
-  constructor() {
-    const config = ECSManager.getValidatedECSConfig();
-
+  private constructor(config: ECSConfig) {
     this.client = new ECSClient({
       region: config.region,
       credentials: {
@@ -31,37 +39,34 @@ export class ECSManager {
     this.cluster = config.cluster;
   }
 
-  private static getValidatedECSConfig(): ECSConfig {
-    const {
-      AWS_USER_ACCESS_KEY,
-      AWS_USER_SECRET_KEY,
-      ECS_TASK_DEFINITION,
-      ECS_CLUSTER,
-      SQS_REGION,
-    } = process.env;
+  static getInstance(config: {
+    region: string;
+    accessKeyId: string;
+    secretAccessKey: string;
+    taskDefinition: string;
+    cluster: string;
+  }): ECSManager {
+    const missingKeys = Object.entries(config)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key);
 
-    if (
-      !AWS_USER_ACCESS_KEY ||
-      !AWS_USER_SECRET_KEY ||
-      !ECS_TASK_DEFINITION ||
-      !ECS_CLUSTER ||
-      !SQS_REGION
-    ) {
-      throw new Error("Missing required ECS environment variables.");
+    if (missingKeys.length > 0) {
+      throw new Error(
+        `Missing ECS configuration values: ${missingKeys.join(", ")}`
+      );
     }
 
-    return {
-      region: SQS_REGION,
-      accessKeyId: AWS_USER_ACCESS_KEY,
-      secretAccessKey: AWS_USER_SECRET_KEY,
-      taskDefinition: ECS_TASK_DEFINITION,
-      cluster: ECS_CLUSTER,
-    };
+    return new ECSManager(config);
   }
 
-  async runTask(bucketName: string, key: string): Promise<void> {
-    console.log("running task ", arguments);
+  async runTask(envVars: TaskEnvVars): Promise<void> {
     try {
+      const environment = Object.entries(envVars).map(([name, value]) => ({
+        name,
+        value,
+      }));
+
+      console.log("environment", environment);
       const runTaskCommand = new RunTaskCommand({
         taskDefinition: this.taskDefinition,
         cluster: this.cluster,
@@ -81,31 +86,16 @@ export class ECSManager {
           containerOverrides: [
             {
               name: "itrascoder-container",
-              environment: [
-                { name: "BUCKET_NAME", value: bucketName },
-                { name: "KEY", value: key },
-                {
-                  name: "AWS_USER_ACCESS_KEY",
-                  value: process.env.AWS_USER_ACCESS_KEY!,
-                },
-                {
-                  name: "AWS_USER_SECRET_KEY",
-                  value: process.env.AWS_USER_SECRET_KEY!,
-                },
-                { name: "SQS_QUEUE_URL", value: process.env.SQS_QUEUE_URL! },
-                { name: "SQS_REGION", value: process.env.SQS_REGION! },
-              ],
+              environment,
             },
           ],
         },
       });
-      
-      const res = await this.client.send(runTaskCommand);
-      console.log("Task started");
+
+      const response = await this.client.send(runTaskCommand);
+      console.log("ECS Task started successfully", response);
     } catch (error) {
       console.error("Failed to run ECS task:", error);
     }
   }
 }
-
-export const ecsManager = new ECSManager();

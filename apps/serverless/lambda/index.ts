@@ -7,8 +7,7 @@ import { config } from "dotenv";
 import { cors } from "hono/cors";
 config();
 
-
-const app = new Hono()
+const app = new Hono();
 app.use(cors());
 
 const s3Client = new S3Client({
@@ -25,8 +24,9 @@ app.get('/', (c) => c.text('Hello Hono!'))
 app.post("/upload/get-presigned-url", async (c) => {
   const body = await c.req.json();
   const { fileName, contentType } = body;
+  console.log("body", body);
   const jobId = v4();
-  const key = `videos/${Date.now()}-${fileName}`;
+  const key = `videos/${jobId}`;
   const command = new PutObjectCommand({
     Bucket: process.env.BUCKET_NAME || "itranscode",
     Key: key,
@@ -36,10 +36,11 @@ app.post("/upload/get-presigned-url", async (c) => {
   const presignedUrl = await getSignedUrl(s3Client, command, {
     expiresIn: 3600,
   });
+  console.log("sending presigned url", presignedUrl);
 
   return c.json({
     message: "Presigned URL generated successfully",
-    data: { presignedUrl, jobId },
+    data: { presignedUrl, jobId, key },
   });
 });
 

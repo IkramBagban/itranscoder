@@ -26,10 +26,8 @@ export const runTranscoderContainer = async (key: string, jobId: string) => {
       },
     });
 
-    console.log("Starting container");
-
     await container.start();
-    console.log(`Container started for key: ${key}`);
+    console.log(`Container started`);
 
     const logStream = await container.logs({
       follow: true,
@@ -38,15 +36,15 @@ export const runTranscoderContainer = async (key: string, jobId: string) => {
     });
 
     logStream.on("data", (chunk) => {
-      process.stdout.write(`[container:${key}] ${chunk.toString()}`);
+      process.stdout.write(`[container] ${chunk.toString()}`);
     });
 
-    logStream.on("end", () => {
-      console.log(`Container logs stream ended for key: ${key}`);
-    });
+    // logStream.on("end", () => {
+    //   console.log(`Container logs stream ended for key: ${key}`);
+    // });
 
     await container.wait();
-    console.log(`Container finished processing: ${key}`);
+    // console.log(`Container finished processing: ${key}`);
 
     await container.remove();
     console.log("Container removed");

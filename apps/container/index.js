@@ -1,30 +1,21 @@
-console.log("new docker image loaded");
 import dotenv from "dotenv";
-
 import {
   S3Client,
   GetObjectCommand,
   PutObjectCommand,
 } from "@aws-sdk/client-s3";
-
 import fs from "fs/promises";
 import fsOld from "node:fs";
 import path from "path";
 import ffmpeg from "fluent-ffmpeg";
-
+import { redisManager } from "./services.js";
 import { RESOLUTIONS } from "./constants.js";
 
 dotenv.config();
-const bucketName = "itranscode";
-console.log("env vars", {
-  AWS_USER_ACCESS_KEY: process.env.AWS_USER_ACCESS_KEY,
-  AWS_USER_SECRET_KEY: process.env.AWS_USER_SECRET_KEY,
-  JOB_ID: process.env.JOB_ID,
-  BUCKET_NAME: process.env.BUCKET_NAME,
-  KEY: process.env.KEY,
-});
 
-console.log("initializing s3 client");
+const bucketName = "itranscode";
+const transcodedBucketName = "itrascoded-videos";
+
 const s3Client = new S3Client({
   region: "eu-north-1",
   credentials: {
@@ -33,72 +24,169 @@ const s3Client = new S3Client({
   },
 });
 
-console.log("initialized s3client", { jobId: process.env.JOB_ID });
+export const updateJobDetails = async (jobId, jobDetails) => {
+  const existing = (await redisManager.get(`job:${jobId}`)) || {};
+  await redisManager.set(`job:${jobId}`, { ...existing, ...jobDetails });
+};
 
 const main = async () => {
+  await updateJobDetails(process.env.JOB_ID, {
+    status: "TRANSCODING",
+  });
   try {
-    const jobId = process.env.JOB_ID
+    const resolutionProgressMap = RESOLUTIONS.reduce((acc, res) => {
+      acc[res.name] = 0;
+      return acc;
+    }, {});
+
     const command = new GetObjectCommand({
       Bucket: process.env.BUCKET_NAME || bucketName,
       Key: process.env.KEY,
     });
 
     let result;
-    // redisManager.set('job:')
     try {
       result = await s3Client.send(command);
     } catch (error) {
-      console.log("error send", error);
+      console.error("Error fetching from S3:", error);
+      await updateJobDetails(process.env.JOB_ID, {
+        status: "FAILED",
+        error: "Failed to fetch original video from S3",
+      });
+      return;
     }
-    console.log("res", result);
-    const originalFilePath = `original-video.mp4`;
+
+    const originalFilePath = "original-video.mp4";
     await fs.writeFile(originalFilePath, result.Body);
     const originalVideoPath = path.resolve(originalFilePath);
 
+    const baseName = path.basename(
+      command.input.Key,
+      path.extname(command.input.Key)
+    );
+    const ext = path.extname(command.input.Key);
+
+    await redisManager.set(`job:${process.env.JOB_ID}:transcodedVideos`, []);
+
     const promises = RESOLUTIONS.map((resolution) => {
-      const output = `${command.input.Key?.split("/")?.[1] || "video"}-${resolution.name}.mp4`;
-      // const output = `output-video-${resolution.name}.mp4`;
-      console.log(path.resolve(output));
+      const output = `${baseName}-${resolution.name}${ext}`;
+      const outputPath = path.resolve(output);
 
-      return new Promise((resolve) => {
-        ffmpeg(originalVideoPath)
-          .output(output)
-          .withVideoCodec("libx264")
-          .withAudioCodec("aac")
-          .withSize(`${resolution.width}x${resolution.height}`)
-          .on("start", () => {
-            console.log(
-              "checking if file exists:",
-              path.resolve(output),
-              fsOld.existsSync(path.resolve(output))
+      return new Promise(async (resolve) => {
+        try {
+          await new Promise((ffmpegResolve, ffmpegReject) => {
+            ffmpeg(originalVideoPath)
+              .output(outputPath)
+              .videoCodec("libx264")
+              .audioCodec("aac")
+              .size(`${resolution.width}x${resolution.height}`)
+              .on("progress", async (progress) => {
+                resolutionProgressMap[resolution.name] = progress.percent;
+                const values = Object.values(resolutionProgressMap);
+                const overallProgress =
+                  values.reduce((a, b) => a + b, 0) / RESOLUTIONS.length;
+
+                await updateJobDetails(process.env.JOB_ID, {
+                  status: "TRANSCODING",
+                  [`progress_${resolution.name}`]: progress.percent,
+                  progress: overallProgress,
+                });
+              })
+              .on("start", () => {
+                console.log(`Start transcoding ${resolution.name}`, outputPath);
+              })
+              .on("end", async () => {
+                try {
+                  const putObjCommand = new PutObjectCommand({
+                    Bucket: transcodedBucketName,
+                    Key: output,
+                    Body: fsOld.createReadStream(outputPath),
+                  });
+
+                  await s3Client.send(putObjCommand);
+
+                  const videoEntry = {
+                    resolution: resolution.name,
+                    path: output,
+                    url: `${process.env.JOB_ID}-${resolution.name}${ext}`,
+                  };
+
+                  const currentList =
+                    (await redisManager.get(
+                      `job:${process.env.JOB_ID}:transcodedVideos`
+                    )) || [];
+
+                  currentList.push(videoEntry);
+                  await redisManager.set(
+                    `job:${process.env.JOB_ID}:transcodedVideos`,
+                    currentList
+                  );
+
+                  await updateJobDetails(process.env.JOB_ID, {
+                    [`progress_${resolution.name}`]: 100,
+                  });
+
+                  // console.log(`Completed ${resolution.name}: ${output}`);
+                  ffmpegResolve();
+                } catch (uploadError) {
+                  console.error(
+                    `Upload error for ${resolution.name}:`,
+                    uploadError
+                  );
+                  ffmpegReject(uploadError);
+                }
+              })
+              .on("error", (err) => {
+                console.error(`Error in ${resolution.name} transcoding:`, err);
+                ffmpegReject(err);
+              })
+              .format(ext || "mp4")
+              .run();
+          });
+
+          await fs
+            .unlink(outputPath)
+            .catch((err) =>
+              console.error(`Error deleting ${outputPath}:`, err)
             );
-            console.log("start", `${resolution.width}x${resolution.height}`);
-          })
-          .on("end", async () => {
-            console.log("output", output);
-            const putObjCommand = new PutObjectCommand({
-              Bucket: "itrascoded-videos",
-              Key: output,
-              Body: fsOld.createReadStream(path.resolve(output)),
-            });
-
-            await s3Client.send(putObjCommand);
-            console.log("File upload seusccccessfuly");
-
-            resolve();
-          })
-          .on("error", (error) => {
-            console.log("on error", error);
-          })
-          .format("mp4")
-          .run();
+          resolve();
+        } catch (error) {
+          console.error(`Failed to process ${resolution.name}:`, error);
+          resolve(); 
+        }
       });
     });
 
     await Promise.all(promises);
+
+    await fs
+      .unlink(originalFilePath)
+      .catch((err) =>
+        console.error(`Error deleting ${originalFilePath}:`, err)
+      );
+
+    const transcodedVideos =
+      (await redisManager.get(`job:${process.env.JOB_ID}:transcodedVideos`)) ||
+      [];
+
+    await updateJobDetails(process.env.JOB_ID, {
+      status: "TRANSCODED",
+      transcodedVideos,
+      progress: 100,
+    });
+
+    await redisManager.del(`job:${process.env.JOB_ID}:transcodedVideos`);
+
+    console.log("All transcoding tasks completed successfully.");
   } catch (error) {
-    console.log("ERRORR", error);
+    console.error("Main error:", error);
+    await updateJobDetails(process.env.JOB_ID, {
+      status: "FAILED",
+      error: error.message,
+    });
+  } finally {
+    process.exit(0);
   }
 };
 
-main().finally(() => process.exit(0));
+main();

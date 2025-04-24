@@ -18,9 +18,10 @@ type SQSConfig = {
 export class QueueManager {
   private readonly client: SQSClient;
   private readonly queueUrl: string;
+  private static instance: QueueManager;
 
-  constructor() {
-    const config = QueueManager.getValidatedSQSConfig();
+  private constructor(config: SQSConfig) {
+    console.log("Initializing SQS");
 
     this.queueUrl = config.queueUrl;
 
@@ -33,29 +34,35 @@ export class QueueManager {
     });
   }
 
-  private static getValidatedSQSConfig(): SQSConfig {
-    const {
-      AWS_USER_ACCESS_KEY,
-      AWS_USER_SECRET_KEY,
-      SQS_QUEUE_URL,
-      SQS_REGION,
-    } = process.env;
+  static getInstance(config?: Partial<SQSConfig>): QueueManager {
+    if (!QueueManager.instance) {
+      const validated = this.getValidatedSQSConfig(config);
+      QueueManager.instance = new QueueManager(validated);
+    }
+    return QueueManager.instance;
+  }
 
-    if (
-      !AWS_USER_ACCESS_KEY ||
-      !AWS_USER_SECRET_KEY ||
-      !SQS_QUEUE_URL ||
-      !SQS_REGION
-    ) {
-      throw new Error("Missing required AWS SQS environment variables.");
+  private static getValidatedSQSConfig(config?: Partial<SQSConfig>): SQSConfig {
+    const finalConfig = {
+      region: config?.region || process.env.SQS_REGION,
+      accessKeyId: config?.accessKeyId || process.env.AWS_USER_ACCESS_KEY,
+      secretAccessKey:
+        config?.secretAccessKey || process.env.AWS_USER_SECRET_KEY,
+      queueUrl: config?.queueUrl || process.env.SQS_QUEUE_URL,
+    };
+
+    const missing: string[] = [];
+    for (const [key, value] of Object.entries(finalConfig)) {
+      if (!value) missing.push(key);
     }
 
-    return {
-      region: SQS_REGION,
-      accessKeyId: AWS_USER_ACCESS_KEY,
-      secretAccessKey: AWS_USER_SECRET_KEY,
-      queueUrl: SQS_QUEUE_URL,
-    };
+    if (missing.length > 0) {
+      throw new Error(
+        `Missing required AWS SQS config values: ${missing.join(", ")}`
+      );
+    }
+
+    return finalConfig as SQSConfig;
   }
 
   async receiveMessages(): Promise<Message[] | undefined> {
@@ -91,4 +98,3 @@ export class QueueManager {
   }
 }
 
-export const queueManager = new QueueManager();

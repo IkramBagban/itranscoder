@@ -121,6 +121,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.787.0
         version: 3.787.0
+      '@repo/cloud-services-manager':
+        specifier: workspace:*
+        version: link:../../packages/cloud-services-manager
       aws-cdk-lib:
         specifier: 2.189.0
         version: 2.189.0(constructs@10.4.2)

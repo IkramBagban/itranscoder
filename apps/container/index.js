@@ -107,8 +107,7 @@ const main = async () => {
 
                   const videoEntry = {
                     resolution: resolution.name,
-                    path: output,
-                    url: `${process.env.JOB_ID}-${resolution.name}${ext}`,
+                    url:output,
                   };
 
                   const currentList =
@@ -140,7 +139,6 @@ const main = async () => {
                 console.error(`Error in ${resolution.name} transcoding:`, err);
                 ffmpegReject(err);
               })
-              .format(ext || "mp4")
               .run();
           });
 

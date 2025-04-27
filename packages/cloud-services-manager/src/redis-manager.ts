@@ -7,9 +7,9 @@ import {
 
 export interface RedisConfig {
   username?: string;
-  host?: string;
-  port?: number;
-  password?: string;
+  host: string;
+  port: number;
+  password: string;
 }
 
 export class RedisManager {
@@ -42,7 +42,7 @@ export class RedisManager {
 
   private static validateConfig(config: RedisConfig): Required<RedisConfig> {
     const { host, port, password, username } = config;
-    console.log('redis config',config )
+    console.log("redis config", config);
 
     const missing: string[] = [];
     if (!host) missing.push("host");

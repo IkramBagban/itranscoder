@@ -16,7 +16,7 @@ COPY ./packages/cloud-services-manager/package.json ./packages/cloud-services-ma
 COPY ./packages/eslint-config/package.json ./packages/eslint-config/package.json
 
 COPY ./packages/cloud-services-manager ./packages/cloud-services-manager
-RUN cd ./package/cloud-services-manager && tsc -b
+RUN cd ./packages/cloud-services-manager && tsc -b
 
 RUN pnpm install
 

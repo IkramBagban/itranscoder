@@ -1,6 +1,7 @@
 FROM node:22-alpine
 
 RUN npm install -g pnpm
+RUN npm install -g typescript
 
 WORKDIR /usr/src/app
 
@@ -24,6 +25,6 @@ COPY ./packages/eslint-config ./packages/eslint-config
 COPY ./packages/typescript-config ./packages/typescript-config
 
 WORKDIR /usr/src/app/apps/backend
-RUN npx tsc -b
+RUN tsc -build
 
 CMD ["node", "dist/index.js"]

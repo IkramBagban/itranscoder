@@ -68,12 +68,7 @@ export class RedisManager {
     }
   }
 
-  static getInstance(config?: {
-    username?: string;
-    host?: string;
-    port?: number;
-    password?: string;
-  }): RedisManager {
+  static getInstance(config?: RedisConfig): RedisManager {
     if (!RedisManager.instance) {
       if (!config) {
         throw new Error(

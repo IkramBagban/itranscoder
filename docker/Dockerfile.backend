@@ -14,17 +14,17 @@ COPY ./turbo.json ./turbo.json
 COPY ./pnpm-workspace.yaml ./pnpm-workspace.yaml 
 COPY ./packages/cloud-services-manager/package.json ./packages/cloud-services-manager/package.json
 COPY ./packages/eslint-config/package.json ./packages/eslint-config/package.json
+COPY ./packages/typescript-config ./packages/typescript-config
 
 COPY ./packages/cloud-services-manager ./packages/cloud-services-manager
-RUN cd ./packages/cloud-services-manager && tsc -b
-
 RUN pnpm install
+RUN cd ./packages/cloud-services-manager && tsc -b
+COPY ./packages/eslint-config ./packages/eslint-config
+
 
 
 COPY ./apps/backend ./apps/backend
 
-COPY ./packages/eslint-config ./packages/eslint-config
-COPY ./packages/typescript-config ./packages/typescript-config
 
 RUN pwd
 

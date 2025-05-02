@@ -1,8 +1,8 @@
 import { ECSManager, QueueManager, RedisManager } from "@repo/cloud-services-manager";
 
 export const redisManager = RedisManager.getInstance({
-  host: process.env.REDIS_HOST,
-  password: process.env.REDIS_PASSWORD,
+  host: process.env.REDIS_HOST!,
+  password: process.env.REDIS_PASSWORD!,
   port: process.env.REDIS_PORT as unknown as number,
 });
 

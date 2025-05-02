@@ -15,11 +15,14 @@ COPY ./pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY ./packages/cloud-services-manager/package.json ./packages/cloud-services-manager/package.json
 COPY ./packages/eslint-config/package.json ./packages/eslint-config/package.json
 
+COPY ./packages/cloud-services-manager ./packages/cloud-services-manager
+RUN cd ./package/cloud-services-manager && tsc -b
+
 RUN pnpm install
 
 
 COPY ./apps/backend ./apps/backend
-COPY ./packages/cloud-services-manager ./packages/cloud-services-manager
+
 COPY ./packages/eslint-config ./packages/eslint-config
 COPY ./packages/typescript-config ./packages/typescript-config
 

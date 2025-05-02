@@ -36,5 +36,16 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             docker pull ikrambagban/transcoder-backend:${{ github.sha }}
-            docker run -d ikrambagban/transcoder-backend:${{ github.sha }}
+            docker run -d \
+            -e AWS_USER_ACCESS_KEY=${{secrest.AWS_USER_ACCESS_KEY}}
+            -e AWS_USER_SECRET_KEY=${{secrest.AWS_USER_SECRET_KEY}}
+            -e SQS_QUEUE_URL=${{secrest.SQS_QUEUE_URL}}
+            -e SQS_REGION=${{secrest.SQS_REGION}}
+            -e ECS_TASK_DEFINITION=${{secrest.ECS_TASK_DEFINITION}}
+            -e ECS_CLUSTER=${{secrest.ECS_CLUSTER}}
+            -e CDN_URL=${{secrest.CDN_URL}}
+            -e REDIS_HOST=${{secrest.REDIS_HOST}}
+            -e REDIS_PASSWORD=${{secrest.REDIS_PASSWORD}}
+            -e REDIS_PORT=${{secrest.REDIS_PORT}}
+            ikrambagban/transcoder-backend:${{ github.sha }}
 

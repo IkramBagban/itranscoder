@@ -24,7 +24,10 @@ COPY ./packages/cloud-services-manager ./packages/cloud-services-manager
 COPY ./packages/eslint-config ./packages/eslint-config
 COPY ./packages/typescript-config ./packages/typescript-config
 
+RUN pwd
+
 WORKDIR /usr/src/app/apps/backend
+RUN pwd
 RUN tsc -build
 
 CMD ["node", "dist/index.js"]

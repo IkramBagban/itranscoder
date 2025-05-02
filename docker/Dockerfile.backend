@@ -28,6 +28,6 @@ RUN pwd
 
 WORKDIR /usr/src/app/apps/backend
 RUN pwd
-RUN tsc -build
+RUN tsc
 
 CMD ["node", "dist/index.js"]

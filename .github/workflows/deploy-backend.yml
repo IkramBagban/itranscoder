@@ -9,7 +9,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: Itranscoder Env vars
-    
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -24,7 +24,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./Dockerfile.backend
+          file: ./docker/Dockerfile.backend
           push: true
           tags: ikrambagban/transcoder-backend:${{ github.sha }}
 

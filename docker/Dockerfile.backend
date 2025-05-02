@@ -14,7 +14,6 @@ COPY ./turbo.json ./turbo.json
 COPY ./pnpm-workspace.yaml ./pnpm-workspace.yaml 
 COPY ./packages/cloud-services-manager/package.json ./packages/cloud-services-manager/package.json
 COPY ./packages/eslint-config/package.json ./packages/eslint-config/package.json
-COPY ./packages/typescript-config/package.json ./packages/typescript-config/package.json
 
 RUN pnpm install
 

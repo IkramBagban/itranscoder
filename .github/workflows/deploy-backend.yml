@@ -37,15 +37,15 @@ jobs:
           script: |
             docker pull ikrambagban/transcoder-backend:${{ github.sha }}
             docker run -d \
-              -e AWS_USER_ACCESS_KEY=${{secrest.AWS_USER_ACCESS_KEY}} \
-              -e AWS_USER_SECRET_KEY=${{secrest.AWS_USER_SECRET_KEY}} \
-              -e SQS_QUEUE_URL=${{secrest.SQS_QUEUE_URL}} \
-              -e SQS_REGION=${{secrest.SQS_REGION}} \
-              -e ECS_TASK_DEFINITION=${{secrest.ECS_TASK_DEFINITION}} \
-              -e ECS_CLUSTER=${{secrest.ECS_CLUSTER}} \
-              -e CDN_URL=${{secrest.CDN_URL}} \
-              -e REDIS_HOST=${{secrest.REDIS_HOST}} \
-              -e REDIS_PASSWORD=${{secrest.REDIS_PASSWORD}} \
-              -e REDIS_PORT=${{secrest.REDIS_PORT}} \
+              -e AWS_USER_ACCESS_KEY=${{secrets.AWS_USER_ACCESS_KEY}} \
+              -e AWS_USER_SECRET_KEY=${{secrets.AWS_USER_SECRET_KEY}} \
+              -e SQS_QUEUE_URL=${{secrets.SQS_QUEUE_URL}} \
+              -e SQS_REGION=${{secrets.SQS_REGION}} \
+              -e ECS_TASK_DEFINITION=${{secrets.ECS_TASK_DEFINITION}} \
+              -e ECS_CLUSTER=${{secrets.ECS_CLUSTER}} \
+              -e CDN_URL=${{secrets.CDN_URL}} \
+              -e REDIS_HOST=${{secrets.REDIS_HOST}} \
+              -e REDIS_PASSWORD=${{secrets.REDIS_PASSWORD}} \
+              -e REDIS_PORT=${{secrets.REDIS_PORT}} \
             ikrambagban/transcoder-backend:${{ github.sha }}
 

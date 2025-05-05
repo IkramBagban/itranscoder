@@ -1,0 +1,32 @@
+name: Deployment
+
+on:
+  push: 
+    branches: 
+      - main
+
+
+jobs: 
+  deploy:
+    runs-on: ubuntu-latest
+    environment: Itranscoder Env vars
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Login to ECR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ secrets.SQS_REGION }}.amazonaws.com
+          username: ${{ secrets.AWS_USER_ACCESS_KEY }}
+          password: ${{ secrets.AWS_USER_SECRET_KEY }}
+
+      - name: Build and push
+        run: |
+          docker build -t itranscode-registery:latest . -f docker/Dockerfile.container 
+          docker tag itranscode-registery:latest ${{ secrets.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ secrets.SQS_REGION }}.amazonaws.com/itranscode-registery:latest
+          docker push ${{ secrets.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ secrets.SQS_REGION }}.amazonaws.com/itranscode-registery:latest
+
+    
+

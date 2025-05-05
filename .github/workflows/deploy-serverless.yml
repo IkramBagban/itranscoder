@@ -1,0 +1,36 @@
+name: Deployment
+
+on:
+  push: 
+    branches: 
+      - main
+
+
+jobs: 
+  deploy:
+    runs-on: ubuntu-latest
+    environment: Itranscoder Env vars
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Deploy to AWS Lambda 
+        run: |
+          npm i -g typescript
+          npm i -g pnpm 
+          npm install -g aws-cdk
+
+          cd ./packages/cloud-services-manager
+          tsc -b
+
+
+          cd ../../apps/serverless
+          export AWS_ACCESS_KEY_ID=${{ secrets.AWS_USER_ACCESS_KEY }}
+          export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_USER_SECRET_KEY }}
+          export AWS_DEFAULT_REGION=us-east-1
+          pnpm install
+          cdk deploy
+
+    
+

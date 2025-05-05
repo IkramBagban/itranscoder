@@ -25,7 +25,7 @@ jobs:
       - name: Build and push
         run: |
           docker build -t itranscode-registery:latest . -f docker/Dockerfile.container 
-          docker tag ${{ secrets.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ secrets.SQS_REGION }}.amazonaws.com/itranscode-registery:latest itranscode-registery:latest 
+          docker tag itranscode-registery:latest ${{ secrets.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ secrets.SQS_REGION }}.amazonaws.com/itranscode-registery:latest
           docker push ${{ secrets.AWS_ACCOUNT_NUMBER }}.dkr.ecr.${{ secrets.SQS_REGION }}.amazonaws.com/itranscode-registery:latest
 
     

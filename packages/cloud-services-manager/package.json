@@ -10,7 +10,7 @@
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "require": "./dist/index.js",  
+      "require": "./dist/index.js",
       "types": "./dist/types/index.d.ts"
     },
     "./ecs-manager": {
@@ -35,5 +35,8 @@
     "@types/redis": "^4.0.11",
     "dotenv": "^16.5.0",
     "redis": "^4.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.7"
   }
 }

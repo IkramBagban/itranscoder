@@ -16,5 +16,8 @@
     "dotenv": "^16.5.0",
     "fluent-ffmpeg": "^2.1.3",
     "redis": "^4.7.0"
+  },
+  "devDependencies": {
+    "@types/fluent-ffmpeg": "^2.1.27"
   }
 }

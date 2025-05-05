@@ -134,7 +134,6 @@ const main = async () => {
                     [`progress_${resolution.name}`]: 100,
                   });
 
-                  // console.log(`Completed ${resolution.name}: ${output}`);
                   ffmpegResolve();
                 } catch (uploadError) {
                   console.error(

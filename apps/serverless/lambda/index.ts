@@ -44,7 +44,7 @@ app.post("/upload/get-presigned-url", async (c) => {
     });
 
     const presignedUrl = await getSignedUrl(s3Client, command, {
-      expiresIn: 3600,
+      expiresIn: 5 * 60,
     });
 
     console.log("Presigned URL generated:", presignedUrl);

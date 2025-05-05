@@ -4,16 +4,22 @@ import { useParams } from "react-router-dom";
 import { LightningBolt } from "../components/svgs/LightningBolt";
 import { CheckIcon } from "../components/svgs/CheckIcon";
 import { DownloadIcon } from "../components/svgs/DownloadIcon";
-import { ErrorIcon } from "../components/svgs/ErrorIcon";
 import LightningEffect from "../components/LightningEffect";
 import Footer from "../components/Footer";
 import Heading from "../components/Heading";
 import Error from "../components/Error";
 import Spinner from "../components/Spinner";
 import TranscodeProgressBar from "../components/Progress/TranscodeProgressBar";
+import FailedResolutionsAlert from "../components/Progress/FailedResolutionsAlert";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const CLOUDFRONT_BASEURL = import.meta.env.VITE_CLOUDFRONT_BASEURL;
+
+interface FailedResolution {
+  resolution: string;
+  error: string;
+  stage: string;
+}
 
 const Progress: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -25,6 +31,12 @@ const Progress: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
+  const [failedResolutions, setFailedResolutions] = useState<FailedResolution[]>([]);
+  const [partialFailure, setPartialFailure] = useState<boolean>(false);
+  console.log('=====', {
+    failedResolutions,
+partialFailure
+  })
   useEffect(() => {
     if (!jobId) {
       setError("Invalid Job ID");
@@ -41,6 +53,8 @@ const Progress: React.FC = () => {
           progress,
           status: jobStatus,
           transcodedVideos,
+          partial_failure,
+          failed_resolutions
         } = response.data.data || {};
 
         setProgress(Math.floor(progress) || 0);
@@ -48,6 +62,8 @@ const Progress: React.FC = () => {
 
         if (jobStatus === "TRANSCODED") {
           setOutputKeys(transcodedVideos || []);
+          setPartialFailure(partial_failure || false);
+          setFailedResolutions(failed_resolutions || []);
           clearInterval(interval);
         } else if (jobStatus === "FAILED") {
           setError("Transcoding failed. Please try again later.");
@@ -112,6 +128,10 @@ const Progress: React.FC = () => {
                   {progress}%
                 </p>
                 <TranscodeProgressBar progress={progress} status={status} />
+
+                {partialFailure && failedResolutions.length > 0 && (
+                  <FailedResolutionsAlert failedResolutions={failedResolutions} />
+                )}
               </div>
             )}
 

@@ -19,6 +19,8 @@ type TaskEnvVars = {
   REDIS_PASSWORD?: string;
   REDIS_PORT?: string;
   JOB_ID: string;
+  IS_RETRY?: string;
+  RETRY_COUNT?: string;
 };
 
 export class ECSManager {
@@ -59,7 +61,9 @@ export class ECSManager {
     return new ECSManager(config);
   }
 
-  async runTask(envVars: TaskEnvVars): Promise<void> {
+  async runTask(
+    envVars: TaskEnvVars
+  ): Promise<{ success: boolean; data?: any; error?: any }> {
     try {
       const environment = Object.entries(envVars).map(([name, value]) => ({
         name,
@@ -93,9 +97,26 @@ export class ECSManager {
       });
 
       const response = await this.client.send(runTaskCommand);
-      console.log("ECS Task started successfully", response);
+      console.log("ECS Task started successfully");
+
+      const hasFailures = response.failures && response.failures.length > 0;
+      if (hasFailures) {
+        return {
+          success: false,
+          error: response.failures,
+        };
+      }
+
+      return {
+        success: true,
+        data: response.tasks,
+      };
     } catch (error) {
       console.error("Failed to run ECS task:", error);
+      return {
+        success: false,
+        error,
+      };
     }
   }
 }

@@ -3,8 +3,9 @@ dotenv.config();
 
 import { runTranscoderContainer } from "./helper/dockerContainerRunner";
 import { ecsManager, queueManager } from "./services";
-import { updateJobDetails } from "./helper/utils";
+import { JOB_STATUS, updateJobDetails } from "./helper/utils";
 import path from "path";
+import { monitorFailedJobs, scheduleRetry } from "./helper/retryJob";
 const safeJSONParse = (json: string) => {
   try {
     return JSON.parse(json);
@@ -18,7 +19,7 @@ const sleep = async (ms: number) => await new Promise((r) => setTimeout(r, ms));
 
 const main = async () => {
   console.log("running main");
-
+  setInterval(monitorFailedJobs, 60000);
 
   // just for debugging purpose
   let msgCount = 0;
@@ -27,15 +28,13 @@ const main = async () => {
   while (1) {
     const Messages = await queueManager.receiveMessages();
     console.log("messages", Messages);
-    console.log("[INFO] count ====>  ", {msgCount, recCounts});
+    console.log("[INFO] count ====>  ", { msgCount, recCounts });
     if (!Messages) {
       // console.log("There is no message in queue.");
 
       await sleep(2000); //adding a short delay to reduce cpu usage when the q is empty
       continue;
     }
-
-
 
     for (const message of Messages) {
       const { MessageId, Body } = message;
@@ -56,7 +55,7 @@ const main = async () => {
         continue;
       }
       if (event?.Event === "s3:TestEvent" && event?.Service === "Amazon S3") {
-        queueManager.deleteMessage(message.ReceiptHandle!);
+        await queueManager.deleteMessage(message.ReceiptHandle!);
         continue;
       }
 
@@ -73,8 +72,15 @@ const main = async () => {
 
         console.log("key & jobId", { key, jobId, keyWithExt });
 
-        // const res = await runTranscoderContainer(key, jobId);
-        // const res = await ecsManager.runTask(bucket.name, key, jobId);
+        await updateJobDetails(jobId, {
+          status: "PENDING",
+          bucket_name: bucket.name,
+          key: key,
+          created_at: new Date().toISOString(),
+          retry_count: 0,
+        });
+
+        
         const res = await ecsManager.runTask({
           BUCKET_NAME: bucket.name,
           KEY: key,
@@ -89,6 +95,25 @@ const main = async () => {
         });
 
         console.log("res", res);
+
+        if (!res?.success) {
+          console.error("Failed to start ECS task:", res?.error);
+
+          await updateJobDetails(jobId, {
+            status: JOB_STATUS.FAILED,
+            error: "Failed to start ECS task",
+            error_details: JSON.stringify(res?.error || "Unknown error"),
+            failure_stage: "task_initiation",
+          });
+
+          await scheduleRetry(
+            jobId,
+            bucket.name,
+            key,
+            new Error(JSON.stringify(res?.error || "Failed to start ECS task"))
+          );
+        }
+
         await queueManager.deleteMessage(message.ReceiptHandle!);
       }
     }

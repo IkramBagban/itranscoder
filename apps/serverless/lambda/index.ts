@@ -19,7 +19,6 @@ const AWS_USER_SECRET_KEY = process.env.AWS_USER_SECRET_KEY;
 app.get("/", (c) => c.text("Hello Hono!"));
 
 app.post("/upload/get-presigned-url", async (c) => {
-  console.log("env", { BUCKET_NAME, AWS_USER_ACCESS_KEY, AWS_USER_SECRET_KEY });
   try {
     const body = await c.req.json();
     const { fileName, contentType } = body;

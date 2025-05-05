@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+    paths: 
+      - 'apps/serverless/**'
+      - 'packages/cloud-services-manager/**'
+      - '.github/workflows/deploy-serverless.yml'
+      - 'docker/Dockerfile.serverless'
 
 jobs:
   deploy:

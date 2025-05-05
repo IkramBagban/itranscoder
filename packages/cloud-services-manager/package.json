@@ -20,6 +20,10 @@
     "./queue-manager": {
       "import": "./dist/queue-manager.js",
       "types": "./dist/types/queue-manager.d.ts"
+    },
+    "./redis-manager": {
+      "import": "./dist/redis-manager.js",
+      "types": "./dist/types/redis-manager.d.ts"
     }
   },
   "keywords": [],

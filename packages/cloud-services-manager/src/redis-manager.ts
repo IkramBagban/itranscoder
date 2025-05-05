@@ -109,4 +109,14 @@ export class RedisManager {
       return false;
     }
   }
+
+  async getKeysByPattern(pattern: string): Promise<string[]> {
+    try {
+      const keys = await this.redisClient.keys(pattern);
+      return keys;
+    } catch (error) {
+      console.error(`Failed to get keys by pattern "${pattern}":`, error);
+      return [];
+    }
+  }
 }

@@ -9,7 +9,7 @@ import fsOld from "node:fs";
 import path from "path";
 import ffmpeg from "fluent-ffmpeg";
 import { redisManager } from "./services.js";
-import { RESOLUTIONS } from "./constants.js";
+import { JOB_STATUS, RESOLUTIONS } from "./constants.js";
 
 dotenv.config();
 
@@ -30,8 +30,13 @@ export const updateJobDetails = async (jobId, jobDetails) => {
 };
 
 const main = async () => {
+  const isRetry = process.env.IS_RETRY === "true";
+  const retryCount = isRetry ? parseInt(process.env.RETRY_COUNT || "0") : 0;
   await updateJobDetails(process.env.JOB_ID, {
-    status: "TRANSCODING",
+    status: JOB_STATUS.TRANSCODING,
+    started_at: new Date().toISOString(),
+    is_retry: isRetry,
+    retry_count: retryCount,
   });
   try {
     const resolutionProgressMap = RESOLUTIONS.reduce((acc, res) => {
@@ -50,10 +55,13 @@ const main = async () => {
     } catch (error) {
       console.error("Error fetching from S3:", error);
       await updateJobDetails(process.env.JOB_ID, {
-        status: "FAILED",
+        status: JOB_STATUS.FAILED,
         error: "Failed to fetch original video from S3",
+        error_details: error.message || error.toString(),
+        failure_stage: "download",
+        completed_at: new Date().toISOString(),
       });
-      return;
+      process.exit(1);
     }
 
     const originalFilePath = "original-video.mp4";
@@ -67,6 +75,7 @@ const main = async () => {
     const ext = path.extname(command.input.Key);
 
     await redisManager.set(`job:${process.env.JOB_ID}:transcodedVideos`, []);
+    const failedResolutions = [];
 
     const promises = RESOLUTIONS.map((resolution) => {
       const output = `${baseName}-${resolution.name}${ext}`;
@@ -87,7 +96,7 @@ const main = async () => {
                   values.reduce((a, b) => a + b, 0) / RESOLUTIONS.length;
 
                 await updateJobDetails(process.env.JOB_ID, {
-                  status: "TRANSCODING",
+                  status: JOB_STATUS.TRANSCODING,
                   [`progress_${resolution.name}`]: progress.percent,
                   progress: overallProgress,
                 });
@@ -107,7 +116,7 @@ const main = async () => {
 
                   const videoEntry = {
                     resolution: resolution.name,
-                    url:output,
+                    url: output,
                   };
 
                   const currentList =
@@ -132,11 +141,22 @@ const main = async () => {
                     `Upload error for ${resolution.name}:`,
                     uploadError
                   );
+                  failedResolutions.push({
+                    resolution: resolution.name,
+                    error: uploadError.message || uploadError.toString(),
+                    stage: "upload",
+                  });
                   ffmpegReject(uploadError);
                 }
               })
               .on("error", (err) => {
                 console.error(`Error in ${resolution.name} transcoding:`, err);
+                failedResolutions.push({
+                  resolution: resolution.name,
+                  error: err.message || err.toString(),
+                  stage: "transcoding",
+                });
+
                 ffmpegReject(err);
               })
               .run();
@@ -150,7 +170,7 @@ const main = async () => {
           resolve();
         } catch (error) {
           console.error(`Failed to process ${resolution.name}:`, error);
-          resolve(); 
+          resolve();
         }
       });
     });
@@ -167,10 +187,24 @@ const main = async () => {
       (await redisManager.get(`job:${process.env.JOB_ID}:transcodedVideos`)) ||
       [];
 
+    if (failedResolutions.length > 0 && transcodedVideos.length === 0) {
+      throw new Error(
+        `All transcoding tasks failed: ${JSON.stringify(failedResolutions)}`
+      );
+    } else if (failedResolutions.length > 0) {
+      console.warn(
+        `Some resolutions failed: ${JSON.stringify(failedResolutions)}`
+      );
+    }
+
     await updateJobDetails(process.env.JOB_ID, {
-      status: "TRANSCODED",
+      status: JOB_STATUS.TRANSCODED,
       transcodedVideos,
       progress: 100,
+      completed_at: new Date().toISOString(),
+      partial_failure: failedResolutions.length > 0,
+      failed_resolutions:
+        failedResolutions.length > 0 ? failedResolutions : undefined,
     });
 
     await redisManager.del(`job:${process.env.JOB_ID}:transcodedVideos`);
@@ -179,9 +213,12 @@ const main = async () => {
   } catch (error) {
     console.error("Main error:", error);
     await updateJobDetails(process.env.JOB_ID, {
-      status: "FAILED",
+      status: JOB_STATUS.FAILED,
       error: error.message,
+      error_details: error.stack,
+      completed_at: new Date().toISOString(),
     });
+    process.exit(1);
   } finally {
     process.exit(0);
   }

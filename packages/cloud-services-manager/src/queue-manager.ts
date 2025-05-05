@@ -3,6 +3,7 @@ import {
   ReceiveMessageCommand,
   SQSClient,
   Message,
+  SendMessageCommand,
 } from "@aws-sdk/client-sqs";
 import dotenv from "dotenv";
 
@@ -65,6 +66,20 @@ export class QueueManager {
     return finalConfig as SQSConfig;
   }
 
+  async sendMessage(payload: any): Promise<void> {
+    try {
+      const command = new SendMessageCommand({
+        QueueUrl: this.queueUrl,
+        MessageBody: JSON.stringify(payload),
+      });
+
+      const res = await this.client.send(command);
+      console.log("Message sent", `requestId=${res.$metadata.requestId}`);
+    } catch (error) {
+      console.error("Failed to send message", error);
+    }
+  }
+
   async receiveMessages(): Promise<Message[] | undefined> {
     try {
       const command = new ReceiveMessageCommand({
@@ -97,4 +112,3 @@ export class QueueManager {
     }
   }
 }
-

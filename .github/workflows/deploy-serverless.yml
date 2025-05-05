@@ -1,12 +1,11 @@
-name: Deployment
+name: Serverless-Deployment
 
 on:
-  push: 
-    branches: 
+  push:
+    branches:
       - main
 
-
-jobs: 
+jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: Itranscoder Env vars
@@ -15,22 +14,41 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Deploy to AWS Lambda 
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+
+      - name: Install global dependencies
         run: |
-          npm i -g typescript
-          npm i -g pnpm 
+          echo "Installing global dependencies..."
+          npm install -g typescript
+          npm install -g pnpm
           npm install -g aws-cdk
+          echo "Global dependencies installed."
 
+      - name: Build cloud-services-manager package
+        run: |
+          echo "Building cloud-services-manager..."
           cd ./packages/cloud-services-manager
+          pnpm install
           tsc -b
+          echo "Build completed for cloud-services-manager."
 
-
+      - name: Deploy to AWS Lambda
+        run: |
+          echo "Deploying to AWS Lambda..."
           cd ../../apps/serverless
+          pwd
+
+          echo "Setting AWS credentials..."
           export AWS_ACCESS_KEY_ID=${{ secrets.AWS_USER_ACCESS_KEY }}
           export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_USER_SECRET_KEY }}
           export AWS_DEFAULT_REGION=us-east-1
+
+          echo "Installing serverless dependencies..."
           pnpm install
-          cdk deploy
 
-    
-
+          echo "Running CDK deploy..."
+          cdk deploy --require-approval never
+          echo "Deployment to AWS Lambda completed successfully."

@@ -64,10 +64,11 @@ app.post("/upload/get-presigned-url", async (c) => {
       },
       200
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error generating presigned URL:", error);
     return c.json(
-      { message: "Failed to generate presigned URL", error: error.message },
+      // @ts-ignore
+      { message: "Failed to generate presigned URL", error: error?.message },
       500
     );
   }

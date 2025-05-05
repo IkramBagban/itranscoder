@@ -38,7 +38,6 @@ jobs:
       - name: Deploy to AWS Lambda
         run: |
           echo "Deploying to AWS Lambda..."
-          cd ../../apps/serverless
           pwd
 
           echo "Setting AWS credentials..."

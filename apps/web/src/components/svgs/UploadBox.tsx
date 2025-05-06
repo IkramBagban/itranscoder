@@ -8,6 +8,7 @@ type Props = {
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
+const MAX_SIZE_BYTES = 1 * 1024 * 1024 * 1024; 
 const UploadBox: React.FC<Props> = ({
   dragActive,
   handleDrag,
@@ -29,7 +30,16 @@ const UploadBox: React.FC<Props> = ({
       <input
         type="file"
         id="file-upload"
-        onChange={handleFileChange}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          console.log('file', {file, fileSize: file?.size, MAX_SIZE_BYTES});
+          if (file && file.size > MAX_SIZE_BYTES) {
+            alert("File size exceeds 1GB limit.");
+            return;
+          }
+
+          handleFileChange(event);
+        }}
         accept="video/*"
         className="hidden"
       />

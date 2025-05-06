@@ -1,4 +1,4 @@
-import React from "react";
+
 import { Route, Routes } from "react-router-dom";
 import Progress from "../pages/Progress";
 import Home from "../pages/Home";

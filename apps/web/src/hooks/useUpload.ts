@@ -63,6 +63,7 @@ export const useUpload = () => {
         }
       );
 
+      // @ts-ignore
       const { presignedUrl, jobId, key } = uploadResponse.data.data || {};
 
       const response = await axios.put(presignedUrl, file, {

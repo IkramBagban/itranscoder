@@ -1,4 +1,3 @@
-import React from "react";
 import { LightningBolt } from "./svgs/LightningBolt";
 
 const LightningEffect = () => {

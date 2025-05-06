@@ -1,6 +1,6 @@
 import React from "react";
 
-export const    LightningBolt: React.FC<{
+export const LightningBolt: React.FC<{
   className?: string;
 }> = ({ className = "w-6 h-6 text-yellow-400" }) => (
   <svg

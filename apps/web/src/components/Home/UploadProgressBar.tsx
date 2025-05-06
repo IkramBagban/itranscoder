@@ -1,14 +1,16 @@
 import React from "react";
+import { useDotAnimation } from "../../hooks/useDotAnimation";
 
 interface Props {
   uploadProgress: number;
 }
 
 const UploadProgressBar: React.FC<Props> = ({ uploadProgress }) => {
+  const { dots } = useDotAnimation();
   return (
     <div className="space-y-2">
       <div className="flex justify-between text-sm text-gray-400">
-        <span>Uploading...</span>
+        <span>Uploading{dots}</span>
         <span>{uploadProgress}%</span>
       </div>
       <div className="relative w-full h-2 bg-gray-700 rounded-full overflow-hidden">

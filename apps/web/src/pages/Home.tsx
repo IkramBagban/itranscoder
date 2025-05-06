@@ -31,7 +31,7 @@ const Home: React.FC = () => {
         <Heading title="Video Transcoder" />
 
         <p className="text-center text-gray-300 pb-2">
-          Convert your videos with lightning speed
+          Convert your videos in different formats with lightning speed
         </p>
 
         <UploadBox

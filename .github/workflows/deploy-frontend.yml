@@ -44,8 +44,14 @@ jobs:
       - name: Invalidate CloudFront cache using AWS CLI
         run: |
           aws cloudfront create-invalidation \
-            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}  # CloudFront Distribution ID
-            --paths "/*"  # Invalidating all files
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --invalidation-batch '{
+              "Paths": {
+                "Quantity": 1,
+                "Items": [ "/*" ]
+              },
+              "CallerReference": "'"$(date +%s)"'"
+            }'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_USER_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_USER_SECRET_KEY }}

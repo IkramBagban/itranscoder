@@ -26,6 +26,8 @@ jobs:
         run: |
           cd apps/web
           npm install -g pnpm
+          echo "VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}" >> .env
+          echo "VITE_CLOUDFRONT_BASEURL=${{ secrets.VITE_CLOUDFRONT_BASEURL }}" >> .env
           pnpm install
           pnpm run build
 

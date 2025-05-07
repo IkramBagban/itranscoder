@@ -41,11 +41,11 @@ jobs:
           SOURCE_DIR: apps/web/dist
           CACHE_CONTROL: "max-age=3600"
 
-      - name: Invalidate CloudFront cache
-        uses: chetan/invalidate-cloudfront-action@v2
-        with:
-          distribution-id: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
-          paths: "/*"
+      - name: Invalidate CloudFront cache using AWS CLI
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}  # CloudFront Distribution ID
+            --paths "/*"  # Invalidating all files
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_USER_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_USER_SECRET_KEY }}

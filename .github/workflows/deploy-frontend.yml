@@ -49,4 +49,4 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_USER_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_USER_SECRET_KEY }}
-          AWS_REGION: ${{ secrets.SQS_REGION }}
+          AWS_REGION: "us-east-1"

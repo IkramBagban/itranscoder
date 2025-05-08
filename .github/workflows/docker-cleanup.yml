@@ -1,0 +1,21 @@
+name: "Docker Cleanup Action"
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs every day at midnight UTC
+  workflow_dispatch:
+  
+jobs:
+  docker-cleanup:
+    runs-on: ubuntu-latest
+    environment: Itranscoder Env vars
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Run Docker Cleanup
+        uses: ikrambagban/docker-pruner@v1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}

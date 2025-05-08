@@ -55,7 +55,7 @@ const UploadBox: React.FC<Props> = ({
           or drag and drop
         </p>
         <p className="text-gray-500 text-sm">
-          MP4, MOV, AVI, WMV, FLV (max 2GB)
+          MP4, MOV, AVI, WMV, FLV (max 1GB)
         </p>
       </label>
     </div>

@@ -32,25 +32,16 @@ jobs:
           file: ./docker/Dockerfile.backend
           push: true
           tags: ikrambagban/transcoder-backend:${{ github.sha }}
-
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ubuntu  
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            docker pull ikrambagban/transcoder-backend:${{ github.sha }}
-            docker run -d \
-              -e AWS_USER_ACCESS_KEY=${{secrets.AWS_USER_ACCESS_KEY}} \
-              -e AWS_USER_SECRET_KEY=${{secrets.AWS_USER_SECRET_KEY}} \
-              -e SQS_QUEUE_URL=${{secrets.SQS_QUEUE_URL}} \
-              -e SQS_REGION=${{secrets.SQS_REGION}} \
-              -e ECS_TASK_DEFINITION=${{secrets.ECS_TASK_DEFINITION}} \
-              -e ECS_CLUSTER=${{secrets.ECS_CLUSTER}} \
-              -e CDN_URL=${{secrets.CDN_URL}} \
-              -e REDIS_HOST=${{secrets.REDIS_HOST}} \
-              -e REDIS_PASSWORD=${{secrets.REDIS_PASSWORD}} \
-              -e REDIS_PORT=${{secrets.REDIS_PORT}} \
-            ikrambagban/transcoder-backend:${{ github.sha }}
-
+      
+      - name: Clone staging-ops repo, update, and push
+        env:
+          PAT: ${{ secrets.PAT }}
+        run: |
+          git clone  https://github.com/IkramBagban/gitops.git
+          cd gitops
+          sed -i 's|image: ikrambagban/transcoder-backend:.*|image: ikrambagban/transcoder-backend:${{ github.sha }}|' itranscoder/deployment.yml
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add itranscoder/deployment.yml
+          git commit -m "Update backend image to ${{ github.sha }}"
+          git push https://${PAT}@github.com/IkramBagban/gitops.git main

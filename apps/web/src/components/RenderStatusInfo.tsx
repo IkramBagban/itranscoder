@@ -11,7 +11,7 @@ const STATUS_INFO = {
     animate: true,
   },
   [JOB_STATUS.PENDING]: {
-    message: "Waiting to begin processing",
+    message: "Provisioning resources",
     icon: <LightningBolt />,
     animate: true,
   },

@@ -3,7 +3,7 @@ name: Backned-Deployment
 on:
   push: 
     branches: 
-      - main
+      - prod
     paths: 
       - 'apps/backend/**'
       - 'packages/cloud-services-manager/**'

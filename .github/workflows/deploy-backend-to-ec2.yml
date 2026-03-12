@@ -1,4 +1,4 @@
-name: Backned-Deployment
+name: Backend-Deployment-TO-VM
 
 on:
   push: 

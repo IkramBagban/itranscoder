@@ -9,6 +9,7 @@ on:
       - 'packages/cloud-services-manager/**'
       - '.github/workflows/deploy-container.yml'
       - 'docker/Dockerfile.container'
+  workflow_dispatch:
 
 
 jobs: 

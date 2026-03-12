@@ -9,6 +9,7 @@ on:
       - 'packages/cloud-services-manager/**'
       - '.github/workflows/deploy-serverless.yml'
       - 'docker/Dockerfile.serverless'
+  workflow_dispatch:
 
 jobs:
   deploy:
